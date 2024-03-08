@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Flurl;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StavKlassTgBot.Models;
 using Telegram.Bot;
@@ -12,19 +13,15 @@ namespace StavKlassTgBot.Services;
 
 public class TelegramBotService
 {
-    private readonly ILogger<TelegramBotService> _logger;
-    private readonly StavKlassTgBotOptions _options;
-    private readonly ITelegramBotClient _telegramBotClient;
-    private readonly ScreenshotProvider _screenshotProvider;
-
-    private const int MaxTelegramInlineCaptionLength = 256;
-    private const int MaxTelegramMediaCaptionLength = 1024;
-
     private static readonly ReceiverOptions ReceiverOptions = new()
     {
-        // receive all update types
-        AllowedUpdates = Array.Empty<UpdateType>(),
+        AllowedUpdates = [UpdateType.InlineQuery],
     };
+
+    private readonly ILogger<TelegramBotService> _logger;
+    private readonly IOptions<StavKlassTgBotOptions> _options;
+    private readonly ITelegramBotClient _telegramBotClient;
+    private readonly ScreenshotProvider _screenshotProvider;
 
     public TelegramBotService(ILogger<TelegramBotService> logger,
         IOptions<StavKlassTgBotOptions> options,
@@ -32,17 +29,21 @@ public class TelegramBotService
         ScreenshotProvider screenshotProvider)
     {
         _logger = logger;
-        _options = options.Value;
+        _options = options;
         _telegramBotClient = telegramBotClient;
         _screenshotProvider = screenshotProvider;
     }
 
-    private async Task HandleUpdateAsync(ITelegramBotClient botClient,
+    private Task HandleUpdateAsync(ITelegramBotClient botClient,
         Update update,
         CancellationToken cancellationToken)
     {
         _logger.LogDebug("Received update with type={Update}", update.Type.ToString());
+
+        // ReSharper disable once AsyncVoidLambda
         ThreadPool.QueueUserWorkItem(async _ => await HandleUpdateFunctionAsync(botClient, update, cancellationToken));
+
+        return Task.CompletedTask;
     }
 
     private async Task HandleUpdateFunctionAsync(ITelegramBotClient botClient,
@@ -57,20 +58,24 @@ public class TelegramBotService
                     inlineQuery.Query.Length,
                     inlineQuery.Query);
 
+                var url = _options.Value.FileHostingUrl;
+                var photosUri = new Uri(url, UriKind.Absolute).AppendPathSegment("photos");
                 var screenshots = await _screenshotProvider.FindScreenshotsAsync(inlineQuery.Query, 10, cancellationToken);
                 var inlineResults = screenshots
-                    .Select(screenshotInfo => new InlineQueryResultPhoto(
+                    .ConvertAll(screenshotInfo => new InlineQueryResultPhoto(
                         screenshotInfo.File ?? Guid.NewGuid().ToString(),
-                        "https://magicxor.github.io/stavklass/photos/" + screenshotInfo.File,
-                        "https://magicxor.github.io/stavklass/photos/" + screenshotInfo.File)
+                        $"{photosUri}/{screenshotInfo.File}",
+                        $"{photosUri}/{screenshotInfo.File}")
                     {
                         PhotoHeight = screenshotInfo.Height,
                         PhotoWidth = screenshotInfo.Width,
                     })
-                    .ToList();
+;
 
                 await botClient.AnswerInlineQueryAsync(inlineQuery.Id, inlineResults, 604800, false, cancellationToken: cancellationToken);
-                _logger.LogInformation("Inline query answered. Sent {Count} results", inlineResults.Count);
+                _logger.LogInformation("Inline query answered. Sent {Count} results: {Results}",
+                    inlineResults.Count,
+                    string.Join(", ", inlineResults.Select(r => r.PhotoUrl)));
             }
         }
         catch (Exception e)

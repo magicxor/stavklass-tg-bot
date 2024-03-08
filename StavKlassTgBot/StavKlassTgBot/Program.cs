@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -25,6 +26,10 @@ public class Program
         try
         {
             var host = Host.CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration((builderContext, config) =>
+            {
+                config.AddEnvironmentVariables("STAVKLASS_");
+            })
             .ConfigureLogging(loggingBuilder =>
             {
                 loggingBuilder.ClearProviders();

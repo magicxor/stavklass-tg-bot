@@ -53,7 +53,7 @@ public class ScreenshotProvider
             : _screenshots.AsQueryable();
 
         screenshots = screenshots
-            .Where(s => s.Text != null && s.Text.Contains(substring))
+            .Where(s => s.Text != null && s.Text.Contains(substring, StringComparison.InvariantCultureIgnoreCase))
             .Take(limit);
 
         return screenshots.ToList();

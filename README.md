@@ -1,6 +1,8 @@
 # stavklass
 stavklass.ru reborn
 
+[Demo](https://github.com/magicxor/stavklass-tg-bot/assets/8275793/f62f8af4-c51a-4218-ba05-b40dcea94593)
+
 ### Docker
 
 ```powershell

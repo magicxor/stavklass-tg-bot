@@ -6,8 +6,10 @@ using StavKlassTgBot.Models;
 
 namespace StavKlassTgBot.Services;
 
-public class ScreenshotProvider
+public sealed class ScreenshotProvider : IDisposable
 {
+    private readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
+
     private readonly IOptions<StavKlassTgBotOptions> _options;
     private readonly IHttpClientFactory _httpClientFactory;
 
@@ -24,18 +26,27 @@ public class ScreenshotProvider
 
     private async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        if (_initialized)
-            return;
+        await _semaphoreSlim.WaitAsync(cancellationToken);
 
-        var client = _httpClientFactory.CreateClient(nameof(HttpClientTypes.WaitAndRetryOnTransientHttpError));
-        var url = _options.Value.FileHostingUrl;
-        var screenshotCatalogUri = new Uri(url, UriKind.Absolute).AppendPathSegment("ScreenshotCatalog.json");
-        var json = await client.GetStringAsync(screenshotCatalogUri, cancellationToken);
-        var screenshotCatalog = JsonSerializer.Deserialize<List<ScreenshotInfo>>(json);
-        if (screenshotCatalog is not null)
-            _screenshots.AddRange(screenshotCatalog);
+        try
+        {
+            if (_initialized)
+                return;
 
-        _initialized = true;
+            var client = _httpClientFactory.CreateClient(nameof(HttpClientTypes.WaitAndRetryOnTransientHttpError));
+            var url = _options.Value.FileHostingUrl;
+            var screenshotCatalogUri = new Uri(url, UriKind.Absolute).AppendPathSegment("ScreenshotCatalog.json");
+            var json = await client.GetStringAsync(screenshotCatalogUri, cancellationToken);
+            var screenshotCatalog = JsonSerializer.Deserialize<List<ScreenshotInfo>>(json);
+            if (screenshotCatalog is not null)
+                _screenshots.AddRange(screenshotCatalog);
+
+            _initialized = true;
+        }
+        finally
+        {
+            _semaphoreSlim.Release();
+        }
     }
 
     public async Task<List<ScreenshotInfo>> FindScreenshotsAsync(string substring, int limit = 10, CancellationToken cancellationToken = default)
@@ -51,5 +62,10 @@ public class ScreenshotProvider
             .Take(limit);
 
         return screenshots.ToList();
+    }
+
+    public void Dispose()
+    {
+        _semaphoreSlim.Dispose();
     }
 }

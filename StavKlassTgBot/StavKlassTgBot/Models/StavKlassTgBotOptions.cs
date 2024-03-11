@@ -2,7 +2,7 @@
 
 namespace StavKlassTgBot.Models;
 
-public class StavKlassTgBotOptions
+public sealed class StavKlassTgBotOptions
 {
     [Required]
     [RegularExpression(@".*:.*")]

@@ -2,7 +2,7 @@
 
 namespace StavKlassTgBot.Models;
 
-public class ScreenshotInfo
+public sealed class ScreenshotInfo
 {
     [JsonPropertyName("file")]
     public string? File { get; init; }

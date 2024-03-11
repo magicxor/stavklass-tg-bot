@@ -1,6 +1,6 @@
 namespace StavKlassTgBot.Exceptions;
 
-public class ServiceException : Exception
+public sealed class ServiceException : Exception
 {
     public ServiceException()
         : base()

@@ -11,7 +11,7 @@ using Telegram.Bot.Types.InlineQueryResults;
 
 namespace StavKlassTgBot.Services;
 
-public class TelegramBotService
+public sealed class TelegramBotService
 {
     private static readonly ReceiverOptions ReceiverOptions = new()
     {

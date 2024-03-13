@@ -69,8 +69,7 @@ public sealed class TelegramBotService
                     {
                         PhotoHeight = screenshotInfo.Height,
                         PhotoWidth = screenshotInfo.Width,
-                    })
-;
+                    });
 
                 await botClient.AnswerInlineQueryAsync(inlineQuery.Id, inlineResults, 604800, false, cancellationToken: cancellationToken);
                 _logger.LogInformation("Inline query answered. Sent {Count} results: {Results}",

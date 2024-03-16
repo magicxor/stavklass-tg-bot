@@ -33,7 +33,7 @@ public sealed class ScreenshotProvider : IDisposable
             if (_initialized)
                 return;
 
-            var client = _httpClientFactory.CreateClient(nameof(HttpClientTypes.WaitAndRetryOnTransientHttpError));
+            var client = _httpClientFactory.CreateClient(nameof(HttpClientTypes.ExternalContent));
             var url = _options.Value.FileHostingUrl;
             var screenshotCatalogUri = new Uri(url, UriKind.Absolute).AppendPathSegment("ScreenshotCatalog.json");
             var json = await client.GetStringAsync(screenshotCatalogUri, cancellationToken);

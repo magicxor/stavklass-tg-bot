@@ -21,10 +21,16 @@ namespace StavKlassTgBot;
 public static class Program
 {
     private static readonly LoggingConfiguration LoggingConfiguration = new XmlLoggingConfiguration("nlog.config");
-    private static readonly IEnumerable<TimeSpan> Delay = Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(1), retryCount: 5);
-    private static readonly IAsyncPolicy<HttpResponseMessage> HttpRetryPolicy = HttpPolicyExtensions
+
+    private static readonly IEnumerable<TimeSpan> TelegramDelay = Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(0.3), retryCount: 3);
+    private static readonly IAsyncPolicy<HttpResponseMessage> TelegramRetryPolicy = HttpPolicyExtensions
         .HandleTransientHttpError()
-        .WaitAndRetryAsync(Delay);
+        .WaitAndRetryAsync(TelegramDelay);
+
+    private static readonly IEnumerable<TimeSpan> ExternalContentDelay = Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(0.1), retryCount: 3);
+    private static readonly IAsyncPolicy<HttpResponseMessage> ExternalContentRetryPolicy = HttpPolicyExtensions
+        .HandleTransientHttpError()
+        .WaitAndRetryAsync(ExternalContentDelay);
 
     public static void Main(string[] args)
     {
@@ -53,15 +59,19 @@ public static class Program
                     .ValidateDataAnnotations()
                     .ValidateOnStart();
 
-                services.AddHttpClient();
-                services.AddHttpClient(nameof(HttpClientTypes.WaitAndRetryOnTransientHttpError))
-                    .AddPolicyHandler(HttpRetryPolicy);
+                services.AddHttpClient(nameof(HttpClientTypes.Telegram))
+                    .AddPolicyHandler(TelegramRetryPolicy)
+                    .AddDefaultLogger();
+
+                services.AddHttpClient(nameof(HttpClientTypes.ExternalContent))
+                    .AddPolicyHandler(ExternalContentRetryPolicy)
+                    .AddDefaultLogger();
 
                 var telegramBotApiKey = hostContext.Configuration.GetTelegramBotApiKey()
                                         ?? throw new ServiceException("Telegram bot API key is missing");
                 services.AddScoped<ITelegramBotClient, TelegramBotClient>(s => new TelegramBotClient(telegramBotApiKey,
                     s.GetRequiredService<IHttpClientFactory>()
-                        .CreateClient(nameof(HttpClientTypes.WaitAndRetryOnTransientHttpError))));
+                        .CreateClient(nameof(HttpClientTypes.Telegram))));
 
                 services.AddScoped<ScreenshotProvider>();
                 services.AddScoped<TelegramBotService>();

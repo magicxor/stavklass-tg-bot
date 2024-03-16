@@ -2,5 +2,6 @@
 
 public enum HttpClientTypes
 {
-    WaitAndRetryOnTransientHttpError,
+    Telegram,
+    ExternalContent,
 }

@@ -73,6 +73,7 @@ public static class Program
                     s.GetRequiredService<IHttpClientFactory>()
                         .CreateClient(nameof(HttpClientTypes.Telegram))));
 
+                services.AddSingleton<TimeProvider>(_ => TimeProvider.System);
                 services.AddScoped<ScreenshotProvider>();
                 services.AddScoped<TelegramBotService>();
                 services.AddHostedService<Worker>();

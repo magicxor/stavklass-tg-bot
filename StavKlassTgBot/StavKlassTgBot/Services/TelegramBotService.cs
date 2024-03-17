@@ -17,6 +17,7 @@ public sealed class TelegramBotService
     {
         AllowedUpdates = [UpdateType.InlineQuery],
     };
+    private static readonly int CacheTime = (int)TimeSpan.FromDays(3).TotalSeconds;
 
     private readonly ILogger<TelegramBotService> _logger;
     private readonly IOptions<StavKlassTgBotOptions> _options;
@@ -62,16 +63,18 @@ public sealed class TelegramBotService
                 var photosUri = new Uri(url, UriKind.Absolute).AppendPathSegment("photos");
                 var screenshots = await _screenshotProvider.FindScreenshotsAsync(inlineQuery.Query.Trim(), 10, cancellationToken);
                 var inlineResults = screenshots
-                    .ConvertAll(screenshotInfo => new InlineQueryResultPhoto(
+                    .Select(screenshotInfo => new InlineQueryResultPhoto(
                         screenshotInfo.File ?? Guid.NewGuid().ToString(),
                         $"{photosUri}/{screenshotInfo.File}",
                         $"{photosUri}/{screenshotInfo.File}")
                     {
                         PhotoHeight = screenshotInfo.Height,
                         PhotoWidth = screenshotInfo.Width,
-                    });
+                    })
+                    .ToList();
 
-                await botClient.AnswerInlineQueryAsync(inlineQuery.Id, inlineResults, 604800, false, cancellationToken: cancellationToken);
+                await botClient.AnswerInlineQueryAsync(inlineQuery.Id, inlineResults, CacheTime, false, cancellationToken: cancellationToken);
+
                 _logger.LogInformation("Inline query answered. Sent {Count} results: {Results}",
                     inlineResults.Count,
                     string.Join(", ", inlineResults.Select(r => r.PhotoUrl)));

@@ -61,7 +61,7 @@ public sealed class TelegramBotService
 
                 var url = _options.Value.FileHostingUrl;
                 var photosUri = new Uri(url, UriKind.Absolute).AppendPathSegment("photos");
-                var screenshots = await _screenshotProvider.FindScreenshotsAsync(inlineQuery.Query.Trim(), 10, cancellationToken);
+                var screenshots = await _screenshotProvider.FindScreenshotsAsync(inlineQuery.Query.Trim(), 20, cancellationToken);
                 var inlineResults = screenshots
                     .Select(screenshotInfo => new InlineQueryResultPhoto(
                         screenshotInfo.File ?? Guid.NewGuid().ToString(),

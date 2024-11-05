@@ -1,4 +1,4 @@
-﻿using Flurl;
+using Flurl;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StavKlassTgBot.Models;
@@ -73,7 +73,7 @@ public sealed class TelegramBotService
                     })
                     .ToList();
 
-                await botClient.AnswerInlineQueryAsync(inlineQuery.Id, inlineResults, CacheTime, false, cancellationToken: cancellationToken);
+                await botClient.AnswerInlineQuery(inlineQuery.Id, inlineResults, CacheTime, false, cancellationToken: cancellationToken);
 
                 _logger.LogInformation("Inline query answered. Sent {Count} results: {Results}",
                     inlineResults.Count,
@@ -93,14 +93,14 @@ public sealed class TelegramBotService
         if (exception is ApiRequestException apiRequestException)
         {
             _logger.LogError(exception,
-                @"Telegram API Error. ErrorCode={ErrorCode}, RetryAfter={RetryAfter}, MigrateToChatId={MigrateToChatId}",
+                "Telegram API Error. ErrorCode={ErrorCode}, RetryAfter={RetryAfter}, MigrateToChatId={MigrateToChatId}",
                 apiRequestException.ErrorCode,
                 apiRequestException.Parameters?.RetryAfter,
                 apiRequestException.Parameters?.MigrateToChatId);
         }
         else
         {
-            _logger.LogError(exception, @"Telegram API Error");
+            _logger.LogError(exception, "Telegram API Error");
         }
 
         return Task.CompletedTask;
@@ -110,7 +110,7 @@ public sealed class TelegramBotService
     {
         _telegramBotClient.StartReceiving(
             updateHandler: HandleUpdateAsync,
-            pollingErrorHandler: HandlePollingErrorAsync,
+            errorHandler: HandlePollingErrorAsync,
             receiverOptions: ReceiverOptions,
             cancellationToken: cancellationToken
         );
